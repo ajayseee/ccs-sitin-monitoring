@@ -164,11 +164,12 @@ form select:focus{
 .container-left,
 .container-right{
     padding: 30px;
+    border: 1px solid #ddd !important;
     width: 100%;
     max-width: 450px;
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
+    background-color: #f0f0f0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
 }
 
 .container-left h1{
