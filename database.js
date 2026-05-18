@@ -538,17 +538,26 @@ const dbHelpers = {
         
         const userId = user.id;
         
-        // 2. Cascade delete dependent records to prevent Foreign Key constraint failures
-        db.serialize(() => {
-          db.run('DELETE FROM feedback WHERE user_id = ?', [userId]);
-          db.run('DELETE FROM notifications WHERE user_id = ?', [userId]);
-          db.run('DELETE FROM reservations WHERE user_id = ?', [userId]);
-          db.run('DELETE FROM sitin_records WHERE user_id = ?', [userId]);
+        // 2. Cascade delete dependent records sequentially using callbacks (since the custom wrapper has no db.serialize)
+        db.run('DELETE FROM feedback WHERE user_id = ?', [userId], (err) => {
+          if (err) return reject(err);
           
-          // 3. Delete the user
-          db.run('DELETE FROM users WHERE id = ?', [userId], function(err) {
-            if (err) reject(err);
-            else resolve({ changes: this.changes });
+          db.run('DELETE FROM notifications WHERE user_id = ?', [userId], (err) => {
+            if (err) return reject(err);
+            
+            db.run('DELETE FROM reservations WHERE user_id = ?', [userId], (err) => {
+              if (err) return reject(err);
+              
+              db.run('DELETE FROM sitin_records WHERE user_id = ?', [userId], (err) => {
+                if (err) return reject(err);
+                
+                // 3. Delete the user
+                db.run('DELETE FROM users WHERE id = ?', [userId], function(err) {
+                  if (err) reject(err);
+                  else resolve({ changes: this ? this.changes : 1 });
+                });
+              });
+            });
           });
         });
       });
