@@ -282,11 +282,124 @@ function setupEventListeners() {
     });
   }
   
-  // Add Student button
+  // Add Student button (Unified Modal)
   const addStudentBtn = document.getElementById('addStudentBtn');
   if (addStudentBtn) {
     addStudentBtn.addEventListener('click', function() {
-      alert('Add Student functionality coming soon');
+      document.getElementById('studentModalTitle').textContent = 'Add New Student';
+      document.getElementById('studentActionType').value = 'add';
+      
+      // Reset inputs
+      document.getElementById('studentIdNumber').value = '';
+      document.getElementById('studentIdNumber').readOnly = false;
+      document.getElementById('studentFirstname').value = '';
+      document.getElementById('studentMiddlename').value = '';
+      document.getElementById('studentLastname').value = '';
+      document.getElementById('studentCourse').value = '';
+      document.getElementById('studentYearLevel').value = '';
+      document.getElementById('studentAddress').value = '';
+      document.getElementById('studentEmail').value = '';
+      document.getElementById('studentPassword').value = '';
+      document.getElementById('studentSessions').value = '30';
+      
+      // Form group visibility
+      document.getElementById('studentPasswordGroup').style.display = 'block';
+      document.getElementById('studentSessionsGroup').style.display = 'none';
+      
+      document.getElementById('studentModal').classList.add('show');
+    });
+  }
+
+  // Close Student Modal handlers
+  const closeStudentModal = document.getElementById('closeStudentModal');
+  if (closeStudentModal) {
+    closeStudentModal.addEventListener('click', () => {
+      document.getElementById('studentModal').classList.remove('show');
+    });
+  }
+  
+  const cancelStudentBtn = document.getElementById('cancelStudentBtn');
+  if (cancelStudentBtn) {
+    cancelStudentBtn.addEventListener('click', () => {
+      document.getElementById('studentModal').classList.remove('show');
+    });
+  }
+
+  const studentSubmitBtn = document.getElementById('studentSubmitBtn');
+  if (studentSubmitBtn) {
+    studentSubmitBtn.addEventListener('click', async function() {
+      const actionType = document.getElementById('studentActionType').value;
+      const idNumber = document.getElementById('studentIdNumber').value.trim();
+      const firstname = document.getElementById('studentFirstname').value.trim();
+      const middlename = document.getElementById('studentMiddlename').value.trim();
+      const lastname = document.getElementById('studentLastname').value.trim();
+      const course = document.getElementById('studentCourse').value;
+      const courseLevel = document.getElementById('studentYearLevel').value;
+      const address = document.getElementById('studentAddress').value.trim();
+      const email = document.getElementById('studentEmail').value.trim();
+      const password = document.getElementById('studentPassword').value.trim();
+      const sessions = parseInt(document.getElementById('studentSessions').value) || 30;
+
+      if (!idNumber || !firstname || !lastname || !course || !courseLevel || !address || !email) {
+        alert('Please fill out all required fields.');
+        return;
+      }
+
+      const token = localStorage.getItem('authToken');
+      
+      try {
+        let response;
+        if (actionType === 'add') {
+          response = await fetch('/api/admin/students', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              idNumber,
+              firstname,
+              middlename,
+              lastname,
+              courseLevel,
+              course,
+              address,
+              email,
+              password
+            })
+          });
+        } else {
+          response = await fetch(`/api/admin/students/${idNumber}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              firstname,
+              middlename,
+              lastname,
+              courseLevel,
+              course,
+              address,
+              email,
+              sessions
+            })
+          });
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          alert(actionType === 'add' ? 'Student added successfully!' : 'Student updated successfully!');
+          document.getElementById('studentModal').classList.remove('show');
+          loadStudents();
+        } else {
+          alert(data.message || 'An error occurred.');
+        }
+      } catch (error) {
+        console.error('Error saving student:', error);
+        alert('An error occurred while saving student.');
+      }
     });
   }
   
@@ -1047,8 +1160,48 @@ function filterStudents(searchTerm) {
 }
 
 // Edit Student
-function editStudent(studentId) {
-  alert('Edit student: ' + studentId + ' - functionality coming soon');
+async function editStudent(studentId) {
+  try {
+    const token = localStorage.getItem('authToken');
+    const response = await fetch(`/api/admin/students/${studentId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      const student = data.student;
+      
+      document.getElementById('studentModalTitle').textContent = 'Edit Student Information';
+      document.getElementById('studentActionType').value = 'edit';
+      
+      // Populate inputs
+      document.getElementById('studentIdNumber').value = student.id_number;
+      document.getElementById('studentIdNumber').readOnly = true;
+      document.getElementById('studentFirstname').value = student.firstname;
+      document.getElementById('studentMiddlename').value = student.middlename || '';
+      document.getElementById('studentLastname').value = student.lastname;
+      document.getElementById('studentCourse').value = student.course;
+      document.getElementById('studentYearLevel').value = student.course_level;
+      document.getElementById('studentAddress').value = student.address || '';
+      document.getElementById('studentEmail').value = student.email;
+      document.getElementById('studentSessions').value = student.sessions !== undefined ? student.sessions : 30;
+      
+      // Form group visibility
+      document.getElementById('studentPasswordGroup').style.display = 'none';
+      document.getElementById('studentSessionsGroup').style.display = 'block';
+      
+      document.getElementById('studentModal').classList.add('show');
+    } else {
+      alert(data.message || 'Failed to fetch student details');
+    }
+  } catch (error) {
+    console.error('Error fetching student details:', error);
+    alert('Unable to load student details. Please try again.');
+  }
 }
 
 // Delete Student

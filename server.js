@@ -718,6 +718,53 @@ app.get('/api/admin/students/:idNumber', authenticateAdmin, async (req, res) => 
   }
 });
 
+// Create new student (admin)
+app.post('/api/admin/students', authenticateAdmin, async (req, res) => {
+  try {
+    const { idNumber, lastname, firstname, middlename, courseLevel, course, address, email, password } = req.body;
+
+    if (!idNumber || !lastname || !firstname || !courseLevel || !course || !address || !email) {
+      return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
+
+    const existingUser = await dbHelpers.getUserByIdNumber(idNumber);
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'ID Number already registered' });
+    }
+
+    const existingUserByEmail = await dbHelpers.getUserByEmail(email);
+    if (existingUserByEmail) {
+      return res.status(400).json({ success: false, message: 'Email already registered' });
+    }
+
+    const defaultPassword = password || 'student123';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+    const userData = {
+      idNumber,
+      lastname,
+      firstname,
+      middlename: middlename || '',
+      courseLevel,
+      course,
+      address,
+      email,
+      password: hashedPassword
+    };
+
+    const result = await dbHelpers.createUser(userData);
+
+    res.status(201).json({
+      success: true,
+      message: 'Student created successfully',
+      userId: result.id
+    });
+  } catch (error) {
+    console.error('Error creating student:', error);
+    res.status(500).json({ success: false, message: 'Server error creating student' });
+  }
+});
+
 // Update student (admin)
 app.put('/api/admin/students/:idNumber', authenticateAdmin, async (req, res) => {
   try {
