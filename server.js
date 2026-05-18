@@ -1023,6 +1023,9 @@ app.put('/api/admin/reservations/:id/status', authenticateAdmin, async (req, res
     // Get reservation details to notify the user
     const reservation = await dbHelpers.getReservationById(reservationId);
     
+    let autoCheckedIn = false;
+    let autoCheckInMessage = '';
+    
     if (reservation) {
       // Create notification for the user
       const notifType = status === 'approved' ? 'reservation_approved' : 'reservation_rejected';
@@ -1032,11 +1035,54 @@ app.put('/api/admin/reservations/:id/status', authenticateAdmin, async (req, res
         : `Your reservation for Lab ${reservation.lab} on ${new Date(reservation.reservation_date).toLocaleDateString()} has been rejected.`;
       
       await dbHelpers.createNotification(reservation.user_id, notifType, notifTitle, notifMessage);
+      
+      // Auto-checkin if today's reservation is approved
+      if (status === 'approved') {
+        // Get today's date in Asia/Manila timezone (YYYY-MM-DD)
+        const options = { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' };
+        const formatter = new Intl.DateTimeFormat('en-US', options);
+        const [{ value: m }, , { value: d }, , { value: y }] = formatter.formatToParts(new Date());
+        const todayStr = `${y}-${m}-${d}`;
+        
+        // Extract YYYY-MM-DD from reservation.reservation_date
+        let resDateStr = '';
+        if (typeof reservation.reservation_date === 'string') {
+          const match = reservation.reservation_date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (match) {
+            resDateStr = `${match[1]}-${match[2]}-${match[3]}`;
+          }
+        }
+        
+        if (resDateStr === todayStr) {
+          try {
+            // Get user details
+            const student = await dbHelpers.getUserById(reservation.user_id);
+            
+            if (student) {
+              const sessions = student.sessions || 30;
+              if (sessions > 0) {
+                await dbHelpers.createSitInRecord(student.id, reservation.purpose || 'Reservation', reservation.lab, pcNumber);
+                autoCheckedIn = true;
+                autoCheckInMessage = 'Student automatically checked-in for today\'s reservation.';
+              } else {
+                autoCheckInMessage = 'Could not auto check-in: Student has no remaining sessions.';
+              }
+            } else {
+              autoCheckInMessage = 'Could not auto check-in: Student not found.';
+            }
+          } catch (sitinErr) {
+            console.error('Error during auto sit-in creation:', sitinErr);
+            autoCheckInMessage = 'Error during auto check-in: ' + sitinErr.message;
+          }
+        }
+      }
     }
     
     res.json({ 
       success: true, 
-      message: `Reservation ${status} successfully` 
+      message: `Reservation ${status} successfully`,
+      autoCheckedIn,
+      autoCheckInMessage
     });
   } catch (error) {
     console.error('Error updating reservation:', error);

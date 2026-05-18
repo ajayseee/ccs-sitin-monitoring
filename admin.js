@@ -1664,54 +1664,32 @@ async function updateReservationStatus(reservationId, status, pcNumber = null) {
     console.log('Status update response:', data);
     
     if (data.success) {
+      // Fast state update: update local list immediately to remove lag
+      const index = allReservations.findIndex(r => r.id == reservationId);
+      if (index !== -1) {
+        allReservations[index].status = status;
+        if (pcNumber) {
+          allReservations[index].pc_number = pcNumber;
+        }
+      }
+      displayReservations();
+      
       if (status === 'approved') {
-        const reservation = allReservations.find(r => r.id == reservationId);
-        if (reservation && reservation.reservation_date) {
-          const resDate = new Date(reservation.reservation_date);
-          const resDateStr = `${resDate.getUTCFullYear()}-${String(resDate.getUTCMonth() + 1).padStart(2, '0')}-${String(resDate.getUTCDate()).padStart(2, '0')}`;
-          
-          const today = new Date();
-          const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-          
-          if (resDateStr === todayStr) {
-            console.log('Today\'s reservation, auto-checking in...');
-            try {
-              const sitinResponse = await fetch('/api/admin/sitin', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                  idNumber: reservation.id_number,
-                  purpose: reservation.purpose || 'Reservation',
-                  lab: reservation.lab,
-                  pcNumber: pcNumber
-                })
-              });
-              
-              const sitinData = await sitinResponse.json();
-              if (sitinData.success) {
-                showToast('Reservation approved and student checked-in!', 'success');
-              } else {
-                showToast('Approved but auto check-in failed: ' + sitinData.message, 'warning');
-              }
-            } catch (err) {
-              showToast('Approved but error during check-in.', 'error');
-            }
-            
-            hideAllSections();
-            if (currentSitInSection) {
-              currentSitInSection.style.display = 'block';
-              loadCurrentSitIn();
-            }
-            return;
+        if (data.autoCheckedIn) {
+          showToast('Reservation approved and student checked-in!', 'success');
+          hideAllSections();
+          if (currentSitInSection) {
+            currentSitInSection.style.display = 'block';
+            loadCurrentSitIn();
           }
+          return;
         }
         showToast('Reservation approved successfully!', 'success');
       } else {
         showToast('Reservation rejected successfully!', 'info');
       }
+      
+      // Load in background just to make sure it's fully in sync
       loadReservations();
     } else {
       showToast(data.message || 'Failed to update reservation', 'error');

@@ -4,15 +4,21 @@ document.addEventListener('DOMContentLoaded', function() {
   const loginForm = document.querySelector('.Login form');
   const loginButton = document.querySelector('.Login .btn button');
 
-  if (loginButton) {
-    loginButton.addEventListener('click', handleLogin);
-  }
-
-  // Also handle form submission with Enter key
   if (loginForm) {
     loginForm.addEventListener('submit', function(e) {
       e.preventDefault();
       handleLogin();
+    });
+  } else if (loginButton) {
+    loginButton.addEventListener('click', handleLogin);
+  }
+
+  // Mobile menu toggle
+  const menuToggle = document.querySelector('.mobile-menu-toggle');
+  const links = document.querySelector('.links');
+  if (menuToggle && links) {
+    menuToggle.addEventListener('click', function() {
+      links.classList.toggle('active');
     });
   }
 

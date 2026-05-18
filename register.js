@@ -16,6 +16,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  // Mobile menu toggle
+  const menuToggle = document.querySelector('.mobile-menu-toggle');
+  const links = document.querySelector('.links');
+  if (menuToggle && links) {
+    menuToggle.addEventListener('click', function() {
+      links.classList.toggle('active');
+    });
+  }
+
   // Load dynamic dropdowns
   loadDropdowns();
 });
