@@ -107,29 +107,19 @@ form{
 .input-text{
     display: flex;
     flex-direction: column;
+    gap: 6px;
     position: relative;
 }
 
 .input-text label{
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
+    position: static;
+    transform: none;
     font-size: 14px;
-    color: #666;
-    pointer-events: none;
-    transition: all 0.3s ease;
-    background-color: #f0f0f0;
-    padding: 0 5px;
-}
-
-.input-text input:focus + label,
-.input-text input:not(:placeholder-shown) + label,
-.input-text select:focus + label,
-.input-text select:valid + label{
-    top: -10px;
-    font-size: 12px;
+    font-weight: 700;
     color: #1a1a2e;
+    pointer-events: auto;
+    background-color: transparent;
+    padding: 0;
 }
 
 form input{
@@ -174,12 +164,11 @@ form select:focus{
 .container-left,
 .container-right{
     padding: 30px;
-    border: 1px solid #ddd;
     width: 100%;
     max-width: 450px;
-    background-color: #f0f0f0;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 .container-left h1{
@@ -354,8 +343,9 @@ form select:focus{
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 5px;
-    margin-bottom: 15px;
+    margin-top: 5px !important;
+    margin-bottom: 0 !important;
+    height: 20px !important;
     cursor: pointer;
     padding-left: 2px;
 }
@@ -390,16 +380,18 @@ form select:focus{
 }
 
 .input-text-group .checkbox-container {
-    margin-top: 4px;
-    margin-bottom: 0;
+    margin-top: 5px !important;
+    margin-bottom: 0 !important;
+    height: 20px !important;
 }
 
 .feedback-msg {
     font-size: 12px;
-    margin-top: 5px;
-    margin-bottom: 0;
+    margin-top: 5px !important;
+    margin-bottom: 0 !important;
     font-weight: 600;
     transition: all 0.3s ease;
-    min-height: 18px;
+    height: 20px !important;
+    min-height: 20px !important;
     padding-left: 2px;
 }
