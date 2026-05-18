@@ -147,6 +147,14 @@ form input:focus{
     border-color: #1a1a2e;
 }
 
+form input:read-only,
+form input[readonly] {
+    background-color: #d5ced8 !important;
+    color: #333 !important;
+    border-color: transparent !important;
+    cursor: default;
+}
+
 form select{
     height: 45px;
     border-radius: 8px;
