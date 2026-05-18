@@ -980,7 +980,7 @@ const dbHelpers = {
   getLeaderboard: () => {
     return new Promise((resolve, reject) => {
       const query = `
-        SELECT u.id, u.id_number, u.firstname, u.lastname, u.course, u.course_level,
+        SELECT u.id, u.id_number, u.firstname, u.lastname, u.course, u.course_level, u.photo,
                COUNT(s.id) as total_sessions,
                COALESCE(SUM(CASE 
                  WHEN s.time_in IS NOT NULL AND s.time_out IS NOT NULL 

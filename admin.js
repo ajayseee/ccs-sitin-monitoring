@@ -2478,11 +2478,13 @@ function displayAdminTopPerformers(top3) {
     const rankNum = index === 1 ? 1 : (index === 0 ? 2 : 3);
     const name = item.firstname ? `${item.firstname} ${item.lastname}` : 'Empty';
     const points = item.points || 0;
-    const initial = item.firstname ? item.firstname[0] : '?';
+    const photoUrl = item.photo || './images/2.jpg';
 
     html += `
       <div class="podium-item ${rankClass} animate__animated animate__fadeInUp" style="animation-delay: ${index * 0.2}s">
-        <div class="avatar">${initial}</div>
+        <div class="avatar" style="overflow: hidden; display: flex; align-items: center; justify-content: center; background: #e2e8f0;">
+          <img src="${photoUrl}" alt="${name}" onerror="this.onerror=null; this.src='./images/2.jpg';" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" />
+        </div>
         <div class="podium-rank">${rankNum}</div>
         <div class="podium-name">${name}</div>
         <div class="podium-points">${points} pts</div>
