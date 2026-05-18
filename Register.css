@@ -163,42 +163,23 @@ form select:focus{
     border-color: #1a1a2e;
 }
 
-.register-card {
-    padding: 40px;
+.container-left,
+.container-right{
+    padding: 30px;
     border: 1px solid #ddd;
     width: 100%;
-    max-width: 900px;
+    max-width: 450px;
     background-color: #f0f0f0;
     border-radius: 12px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.register-card h1 {
+.container-left h1{
     font-family: Tahoma;
     font-size: clamp(24px, 5vw, 32px);
     color: #333;
-    margin-bottom: 25px;
+    margin-bottom: 10px;
     text-align: center;
-}
-
-.form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px 30px;
-}
-
-.input-text-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.feedback-msg {
-    font-size: 12px;
-    margin-top: 5px;
-    margin-bottom: 5px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    min-height: 18px;
 }
 
 .btn{
@@ -258,7 +239,8 @@ form select:focus{
         gap: 20px;
     }
     
-    .register-card{
+    .container-left,
+    .container-right{
         padding: 25px;
     }
 }
@@ -317,14 +299,14 @@ form select:focus{
         gap: 20px;
     }
     
-    .register-card{
+    .container-left,
+    .container-right{
         max-width: 100%;
         padding: 25px 20px;
     }
     
-    .form-grid {
-        grid-template-columns: 1fr;
-        gap: 20px;
+    .container-right form{
+        margin-top: 0;
     }
     
     .btn button{
@@ -344,7 +326,8 @@ form select:focus{
         width: 35px;
     }
     
-    .register-card{
+    .container-left,
+    .container-right{
         padding: 20px 15px;
     }
     
@@ -390,4 +373,25 @@ form select:focus{
     padding: 0 !important;
     cursor: pointer !important;
     user-select: none !important;
+}
+
+.input-text-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.input-text-group .checkbox-container {
+    margin-top: 4px;
+    margin-bottom: 0;
+}
+
+.feedback-msg {
+    font-size: 12px;
+    margin-top: 5px;
+    margin-bottom: 0;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    min-height: 18px;
+    padding-left: 2px;
 }

@@ -1,20 +1,20 @@
 // Client-side JavaScript for registration
 
 document.addEventListener('DOMContentLoaded', function() {
-  const registerForm = document.querySelector('.Register form');
+  const registerForms = document.querySelectorAll('.Register form');
   const registerButton = document.querySelector('.Register .btn button');
 
   if (registerButton) {
     registerButton.addEventListener('click', handleRegister);
   }
 
-  // Also handle form submission with Enter key
-  if (registerForm) {
-    registerForm.addEventListener('submit', function(e) {
+  // Also handle form submission with Enter key on all forms in the section
+  registerForms.forEach(form => {
+    form.addEventListener('submit', function(e) {
       e.preventDefault();
       handleRegister();
     });
-  }
+  });
 
   // Mobile menu toggle
   const menuToggle = document.querySelector('.mobile-menu-toggle');
