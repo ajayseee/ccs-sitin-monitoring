@@ -67,7 +67,7 @@
             <!-- Profile Photo -->
             <div class="profile-photo-section">
               <div class="profile-photo">
-                <img src="./images/2.jpg" alt="Profile Photo" id="profileImage" />
+                <img src="./images/defaultpfp.jpg" alt="Profile Photo" id="profileImage" />
               </div>
             </div>
             <div class="divider-line"></div>
@@ -165,12 +165,15 @@
             <!-- Profile Photo in Edit Modal -->
             <div class="edit-photo-section">
               <div class="profile-photo">
-                <img src="./images/2.jpg" alt="Profile Photo" id="editProfileImage" />
+                <img src="./images/defaultpfp.jpg" alt="Profile Photo" id="editProfileImage" />
                 <label for="editPhotoInput" class="change-photo-btn">
                   <i class="fa-solid fa-camera"></i>
                 </label>
               </div>
               <input type="file" id="editPhotoInput" accept="image/*" style="display: none;" />
+              <button type="button" id="removePhotoBtn" class="remove-photo-btn" style="margin-top: 10px; background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background-color 0.3s ease;" onmouseover="this.style.backgroundColor='#c82333'" onmouseout="this.style.backgroundColor='#dc3545'">
+                <i class="fa-solid fa-trash"></i> Remove Photo
+              </button>
             </div>
             
             <!-- Form Fields -->

@@ -70,7 +70,7 @@ async function loadUserData() {
           if (user.photo) {
             document.getElementById('profileImage').src = user.photo;
           } else {
-            document.getElementById('profileImage').src = './images/2.jpg';
+            document.getElementById('profileImage').src = './images/defaultpfp.jpg';
           }
           return;
         }
@@ -98,7 +98,7 @@ async function loadUserData() {
     if (user.photo) {
       document.getElementById('profileImage').src = user.photo;
     } else {
-      document.getElementById('profileImage').src = './images/2.jpg';
+      document.getElementById('profileImage').src = './images/defaultpfp.jpg';
     }
   } else {
     // If no user data, show placeholder
@@ -107,8 +107,8 @@ async function loadUserData() {
     document.getElementById('studentYear').textContent = 'N/A';
     document.getElementById('studentEmail').textContent = 'N/A';
     document.getElementById('studentAddress').textContent = 'N/A';
-    document.getElementById('studentSessions').textContent = user.sessions || 30;
-    document.getElementById('profileImage').src = './images/2.jpg';
+    document.getElementById('studentSessions').textContent = 30;
+    document.getElementById('profileImage').src = './images/defaultpfp.jpg';
   }
 }
 
@@ -225,6 +225,17 @@ function setupEditProfileModal() {
     });
   }
 
+  // Handle remove photo
+  const removePhotoBtn = document.getElementById('removePhotoBtn');
+  if (removePhotoBtn) {
+    removePhotoBtn.addEventListener('click', function() {
+      document.getElementById('editProfileImage').src = './images/defaultpfp.jpg';
+      if (editPhotoInput) {
+        editPhotoInput.value = '';
+      }
+    });
+  }
+
   // Handle form submission
   if (form) {
     form.addEventListener('submit', async function(e) {
@@ -251,7 +262,7 @@ function openEditModal() {
   document.getElementById('editAddress').value = userData.address || '';
   
   // Set profile photo
-  const profileImage = userData.photo || './images/2.jpg';
+  const profileImage = userData.photo || './images/defaultpfp.jpg';
   document.getElementById('editProfileImage').src = profileImage;
   
   // Show modal
