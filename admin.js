@@ -1667,12 +1667,13 @@ async function updateReservationStatus(reservationId, status, pcNumber = null) {
       if (status === 'approved') {
         const reservation = allReservations.find(r => r.id == reservationId);
         if (reservation && reservation.reservation_date) {
-          const reservationDate = new Date(reservation.reservation_date);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          reservationDate.setHours(0, 0, 0, 0);
+          const resDate = new Date(reservation.reservation_date);
+          const resDateStr = `${resDate.getUTCFullYear()}-${String(resDate.getUTCMonth() + 1).padStart(2, '0')}-${String(resDate.getUTCDate()).padStart(2, '0')}`;
           
-          if (reservationDate.getTime() === today.getTime()) {
+          const today = new Date();
+          const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+          
+          if (resDateStr === todayStr) {
             console.log('Today\'s reservation, auto-checking in...');
             try {
               const sitinResponse = await fetch('/api/admin/sitin', {
