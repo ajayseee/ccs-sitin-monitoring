@@ -388,11 +388,20 @@ form select:focus{
 
 .feedback-msg {
     font-size: 12px;
-    margin-top: 5px !important;
-    margin-bottom: 0 !important;
     font-weight: 600;
     transition: all 0.3s ease;
-    height: 20px !important;
-    min-height: 20px !important;
     padding-left: 2px;
+    margin-top: 0;
+    margin-bottom: 0;
+    height: 0;
+    min-height: 0;
+    overflow: hidden;
+    opacity: 0;
+}
+
+.feedback-msg:not(:empty) {
+    margin-top: 5px !important;
+    height: 18px !important;
+    min-height: 18px !important;
+    opacity: 1;
 }
