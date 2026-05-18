@@ -27,6 +27,50 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Load dynamic dropdowns
   loadDropdowns();
+
+  // Live Password Validation
+  const passwordInput = document.getElementById('password');
+  const confirmPasswordInput = document.getElementById('confirmPassword');
+  const passwordFeedback = document.getElementById('passwordFeedback');
+  const confirmPasswordFeedback = document.getElementById('confirmPasswordFeedback');
+
+  function validatePasswords() {
+    const password = passwordInput ? passwordInput.value : '';
+    const confirmPassword = confirmPasswordInput ? confirmPasswordInput.value : '';
+
+    // Validate main password
+    if (passwordInput && passwordFeedback) {
+      if (password.length === 0) {
+        passwordFeedback.textContent = '';
+      } else if (password.length < 6) {
+        passwordFeedback.innerHTML = '❌ Password must be at least 6 characters';
+        passwordFeedback.style.color = '#dc3545';
+      } else {
+        passwordFeedback.innerHTML = '✅ Password is valid';
+        passwordFeedback.style.color = '#28a745';
+      }
+    }
+
+    // Validate confirmation matching
+    if (confirmPasswordInput && confirmPasswordFeedback) {
+      if (confirmPassword.length === 0) {
+        confirmPasswordFeedback.textContent = '';
+      } else if (password !== confirmPassword) {
+        confirmPasswordFeedback.innerHTML = '❌ Passwords do not match';
+        confirmPasswordFeedback.style.color = '#dc3545';
+      } else {
+        confirmPasswordFeedback.innerHTML = '✅ Passwords match';
+        confirmPasswordFeedback.style.color = '#28a745';
+      }
+    }
+  }
+
+  if (passwordInput) {
+    passwordInput.addEventListener('input', validatePasswords);
+  }
+  if (confirmPasswordInput) {
+    confirmPasswordInput.addEventListener('input', validatePasswords);
+  }
 });
 
 async function handleRegister() {

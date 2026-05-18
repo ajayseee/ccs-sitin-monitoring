@@ -845,7 +845,7 @@ const dbHelpers = {
   getAllReservations: () => {
     return new Promise((resolve, reject) => {
       db.all(`
-        SELECT r.*, u.id_number, u.firstname, u.lastname 
+        SELECT r.*, u.id_number, u.firstname, u.lastname, u.middlename 
         FROM reservations r
         JOIN users u ON r.user_id = u.id
         ORDER BY r.reservation_date DESC, r.created_at DESC
@@ -980,7 +980,7 @@ const dbHelpers = {
   getLeaderboard: () => {
     return new Promise((resolve, reject) => {
       const query = `
-        SELECT u.id, u.id_number, u.firstname, u.lastname, u.course, u.course_level, u.photo,
+        SELECT u.id, u.id_number, u.firstname, u.lastname, u.middlename, u.course, u.course_level, u.photo,
                COUNT(s.id) as total_sessions,
                COALESCE(SUM(CASE 
                  WHEN s.time_in IS NOT NULL AND s.time_out IS NOT NULL 

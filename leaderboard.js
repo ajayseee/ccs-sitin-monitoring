@@ -1,5 +1,22 @@
 // Client-side JavaScript for leaderboard page
 
+function formatStudentName(firstname, middlename, lastname, type = 'initial') {
+  const first = (firstname || '').trim();
+  const last = (lastname || '').trim();
+  const middle = (middlename || '').trim();
+  
+  if (!middle || middle.toUpperCase() === 'N/A') {
+    return `${first} ${last}`.trim();
+  }
+  
+  if (type === 'initial') {
+    const initial = middle.charAt(0).toUpperCase();
+    return `${first} ${initial}. ${last}`.trim();
+  }
+  
+  return `${first} ${middle} ${last}`.trim();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Check if user is logged in
     const userData = localStorage.getItem('userData');
@@ -81,7 +98,7 @@ function displayTopPerformers(top3) {
     podium.forEach((item, index) => {
         const rankClass = index === 1 ? 'first' : (index === 0 ? 'second' : 'third');
         const rankNum = index === 1 ? 1 : (index === 0 ? 2 : 3);
-        const name = item.firstname ? `${item.firstname} ${item.lastname}` : 'Empty';
+        const name = item.firstname ? formatStudentName(item.firstname, item.middlename, item.lastname, 'initial') : 'Empty';
         const points = item.points || 0;
         const photoUrl = item.photo || './images/defaultpfp.jpg';
 
@@ -110,7 +127,7 @@ function displayFullLeaderboard(data) {
     let html = '';
     data.forEach((student, index) => {
         const rank = index + 1;
-        const name = `${student.firstname} ${student.lastname}`;
+        const name = formatStudentName(student.firstname, student.middlename, student.lastname, 'initial');
         const courseYear = `${student.course} - ${student.course_level}`;
         const hours = Math.floor(student.total_minutes / 60);
         const mins = Math.floor(student.total_minutes % 60);
@@ -157,7 +174,7 @@ function updateMyPerformance(data) {
 function filterLeaderboard(searchTerm) {
     const term = searchTerm.toLowerCase();
     const filtered = allLeaderboardData.filter(student => 
-        `${student.firstname} ${student.lastname}`.toLowerCase().includes(term) ||
+        formatStudentName(student.firstname, student.middlename, student.lastname, 'initial').toLowerCase().includes(term) ||
         student.id_number.toString().includes(term)
     );
     displayFullLeaderboard(filtered);

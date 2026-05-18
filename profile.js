@@ -1,5 +1,22 @@
 // Client-side JavaScript for profile page
 
+function formatStudentName(firstname, middlename, lastname, type = 'full') {
+  const first = (firstname || '').trim();
+  const last = (lastname || '').trim();
+  const middle = (middlename || '').trim();
+  
+  if (!middle || middle.toUpperCase() === 'N/A') {
+    return `${first} ${last}`.trim();
+  }
+  
+  if (type === 'initial') {
+    const initial = middle.charAt(0).toUpperCase();
+    return `${first} ${initial}. ${last}`.trim();
+  }
+  
+  return `${first} ${middle} ${last}`.trim();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   // Check if user is logged in (by checking localStorage)
   const userData = localStorage.getItem('userData');
@@ -57,7 +74,7 @@ async function loadUserData() {
           localStorage.setItem('userData', JSON.stringify(user));
           
           // Update student information
-          document.getElementById('studentName').textContent = `${user.firstname} ${user.lastname}`;
+          document.getElementById('studentName').textContent = formatStudentName(user.firstname, user.middlename, user.lastname, 'full');
           document.getElementById('studentCourse').textContent = user.course || 'N/A';
           document.getElementById('studentYear').textContent = user.courseLevel || 'N/A';
           document.getElementById('studentEmail').textContent = user.email || 'N/A';
@@ -85,7 +102,7 @@ async function loadUserData() {
     const user = JSON.parse(cachedUserData);
     
     // Update student information
-    document.getElementById('studentName').textContent = `${user.firstname} ${user.lastname}` || 'Guest User';
+    document.getElementById('studentName').textContent = formatStudentName(user.firstname, user.middlename, user.lastname, 'full') || 'Guest User';
     document.getElementById('studentCourse').textContent = user.course || 'N/A';
     document.getElementById('studentYear').textContent = user.courseLevel || 'N/A';
     document.getElementById('studentEmail').textContent = user.email || 'N/A';
@@ -326,7 +343,7 @@ async function saveProfile() {
       localStorage.setItem('userData', JSON.stringify(updatedUserData));
 
       // Update displayed user info
-      document.getElementById('studentName').textContent = `${userData.firstname} ${userData.lastname}`;
+      document.getElementById('studentName').textContent = formatStudentName(userData.firstname, userData.middlename, userData.lastname, 'full');
       document.getElementById('studentCourse').textContent = userData.course;
       document.getElementById('studentYear').textContent = userData.courseLevel;
       document.getElementById('studentEmail').textContent = userData.email;

@@ -1,5 +1,22 @@
 // Admin Page JavaScript
 
+function formatStudentName(firstname, middlename, lastname, type = 'full') {
+  const first = (firstname || '').trim();
+  const last = (lastname || '').trim();
+  const middle = (middlename || '').trim();
+  
+  if (!middle || middle.toUpperCase() === 'N/A') {
+    return `${first} ${last}`.trim();
+  }
+  
+  if (type === 'initial') {
+    const initial = middle.charAt(0).toUpperCase();
+    return `${first} ${initial}. ${last}`.trim();
+  }
+  
+  return `${first} ${middle} ${last}`.trim();
+}
+
 let mainContent, studentInfoSection, viewSitInRecordsSection, currentSitInSection, reservationSection, feedbackReportsSection, sitinReportsSection, dropdownManagerSection;
 let allSitinReports = []; // Store all reports for filtering and export
 let currentFilteredSitinReports = []; // Store currently filtered reports for export
@@ -945,7 +962,7 @@ async function searchStudentById() {
       const sitinModal = document.getElementById('sitinModal');
       if (sitinModal) {
         document.getElementById('sitinIdNumber').value = student.id_number;
-        document.getElementById('sitinStudentName').value = `${student.firstname} ${student.lastname}`;
+        document.getElementById('sitinStudentName').value = formatStudentName(student.firstname, student.middlename, student.lastname, 'full');
         document.getElementById('sitinRemainingSessions').value = remainingSessions;
         sitinModal.classList.add('show');
       }
@@ -999,7 +1016,7 @@ function displayStudents(students) {
     html += `
       <tr>
         <td>${student.id_number}</td>
-        <td>${student.firstname} ${student.lastname}</td>
+        <td>${formatStudentName(student.firstname, student.middlename, student.lastname, 'initial')}</td>
         <td>${student.year}</td>
         <td>${student.course}</td>
         <td>${student.sessions || 30}</td>
@@ -1106,7 +1123,7 @@ async function fetchStudentForSitIn(idNumber) {
     
     if (data.success) {
       const student = data.student;
-      document.getElementById('sitinStudentName').value = `${student.firstname} ${student.lastname}`;
+      document.getElementById('sitinStudentName').value = formatStudentName(student.firstname, student.middlename, student.lastname, 'full');
       document.getElementById('sitinRemainingSessions').value = student.sessions || 30;
     } else {
       document.getElementById('sitinStudentName').value = '';
@@ -1583,7 +1600,7 @@ function displayReservations() {
       day: 'numeric'
     });
     
-    const name = `${res.firstname} ${res.lastname}`;
+    const name = formatStudentName(res.firstname, res.middlename, res.lastname, 'initial');
     
     // Status badge
     let statusBadge = '';
@@ -2476,7 +2493,7 @@ function displayAdminTopPerformers(top3) {
   podium.forEach((item, index) => {
     const rankClass = index === 1 ? 'first' : (index === 0 ? 'second' : 'third');
     const rankNum = index === 1 ? 1 : (index === 0 ? 2 : 3);
-    const name = item.firstname ? `${item.firstname} ${item.lastname}` : 'Empty';
+    const name = item.firstname ? formatStudentName(item.firstname, item.middlename, item.lastname, 'initial') : 'Empty';
     const points = item.points || 0;
     const photoUrl = item.photo || './images/defaultpfp.jpg';
 
@@ -2502,7 +2519,7 @@ function displayAdminFullLeaderboard(data) {
   let html = '';
   data.forEach((student, index) => {
     const rank = index + 1;
-    const name = `${student.firstname} ${student.lastname}`;
+    const name = formatStudentName(student.firstname, student.middlename, student.lastname, 'initial');
     const courseYear = `${student.course} - ${student.course_level}`;
     const hours = Math.floor(student.total_minutes / 60);
     const mins = Math.floor(student.total_minutes % 60);
@@ -2531,7 +2548,7 @@ function displayAdminFullLeaderboard(data) {
 function filterAdminLeaderboard(searchTerm) {
   const term = searchTerm.toLowerCase();
   const filtered = allAdminLeaderboardData.filter(student => 
-    `${student.firstname} ${student.lastname}`.toLowerCase().includes(term) ||
+    formatStudentName(student.firstname, student.middlename, student.lastname, 'initial').toLowerCase().includes(term) ||
     student.id_number.toString().includes(term)
   );
   displayAdminFullLeaderboard(filtered);
@@ -2542,7 +2559,7 @@ function openApproveModal(reservationId) {
   const reservation = allReservations.find(r => r.id == reservationId);
   
   if (reservation) {
-    details.innerHTML = `Student: <strong>${reservation.firstname} ${reservation.lastname}</strong><br>Lab: <strong>Lab ${reservation.lab}</strong><br>Date: <strong>${new Date(reservation.reservation_date).toLocaleDateString()}</strong>`;
+    details.innerHTML = `Student: <strong>${formatStudentName(reservation.firstname, reservation.middlename, reservation.lastname, 'full')}</strong><br>Lab: <strong>Lab ${reservation.lab}</strong><br>Date: <strong>${new Date(reservation.reservation_date).toLocaleDateString()}</strong>`;
   }
   
   document.getElementById('approveReservationId').value = reservationId;
