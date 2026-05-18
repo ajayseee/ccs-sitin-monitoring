@@ -71,6 +71,21 @@ document.addEventListener('DOMContentLoaded', function() {
   if (confirmPasswordInput) {
     confirmPasswordInput.addEventListener('input', validatePasswords);
   }
+
+  // Handle No Middle Name Checkbox Behavior
+  const middlenameInput = document.getElementById('middlename');
+  const noMiddleNameCheckbox = document.getElementById('noMiddleNameCheckbox');
+  if (noMiddleNameCheckbox && middlenameInput) {
+    noMiddleNameCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        middlenameInput.value = 'N/A';
+        middlenameInput.readOnly = true;
+      } else {
+        middlenameInput.value = '';
+        middlenameInput.readOnly = false;
+      }
+    });
+  }
 });
 
 async function handleRegister() {
