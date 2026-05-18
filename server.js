@@ -1036,24 +1036,60 @@ app.put('/api/admin/reservations/:id/status', authenticateAdmin, async (req, res
       
       await dbHelpers.createNotification(reservation.user_id, notifType, notifTitle, notifMessage);
       
-      // Auto-checkin if today's reservation is approved
-      if (status === 'approved') {
         // Get today's date in Asia/Manila timezone (YYYY-MM-DD)
         const options = { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' };
         const formatter = new Intl.DateTimeFormat('en-US', options);
-        const [{ value: m }, , { value: d }, , { value: y }] = formatter.formatToParts(new Date());
+        const parts = formatter.formatToParts(new Date());
+        const y = parts.find(p => p.type === 'year').value;
+        const m = parts.find(p => p.type === 'month').value;
+        const d = parts.find(p => p.type === 'day').value;
         const todayStr = `${y}-${m}-${d}`;
         
-        // Extract YYYY-MM-DD from reservation.reservation_date
+        // Also get UTC date for today
+        const utcDate = new Date();
+        const utcy = utcDate.getUTCFullYear();
+        const utcm = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+        const utcd = String(utcDate.getUTCDate()).padStart(2, '0');
+        const utcTodayStr = `${utcy}-${utcm}-${utcd}`;
+        
         let resDateStr = '';
-        if (typeof reservation.reservation_date === 'string') {
-          const match = reservation.reservation_date.match(/^(\d{4})-(\d{2})-(\d{2})/);
-          if (match) {
-            resDateStr = `${match[1]}-${match[2]}-${match[3]}`;
+        let resDateUTCStr = '';
+        
+        if (reservation.reservation_date) {
+          const rDate = new Date(reservation.reservation_date);
+          if (!isNaN(rDate.getTime())) {
+            // Manila timezone
+            try {
+              const rParts = formatter.formatToParts(rDate);
+              const ry = rParts.find(p => p.type === 'year').value;
+              const rm = rParts.find(p => p.type === 'month').value;
+              const rd = rParts.find(p => p.type === 'day').value;
+              resDateStr = `${ry}-${rm}-${rd}`;
+            } catch (e) {}
+            
+            // UTC timezone
+            const rUtcy = rDate.getUTCFullYear();
+            const rUtcm = String(rDate.getUTCMonth() + 1).padStart(2, '0');
+            const rUtcd = String(rDate.getUTCDate()).padStart(2, '0');
+            resDateUTCStr = `${rUtcy}-${rUtcm}-${rUtcd}`;
           }
         }
         
-        if (resDateStr === todayStr) {
+        // Direct string match if stored as simple string in database
+        let directMatchStr = '';
+        if (typeof reservation.reservation_date === 'string') {
+          const match = reservation.reservation_date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (match) {
+            directMatchStr = `${match[1]}-${match[2]}-${match[3]}`;
+          }
+        }
+        
+        const isToday = 
+          (resDateStr && resDateStr === todayStr) || 
+          (resDateUTCStr && resDateUTCStr === utcTodayStr) ||
+          (directMatchStr && (directMatchStr === todayStr || directMatchStr === utcTodayStr));
+        
+        if (isToday) {
           try {
             // Get user details
             const student = await dbHelpers.getUserById(reservation.user_id);
@@ -1075,7 +1111,6 @@ app.put('/api/admin/reservations/:id/status', authenticateAdmin, async (req, res
             autoCheckInMessage = 'Error during auto check-in: ' + sitinErr.message;
           }
         }
-      }
     }
     
     res.json({ 

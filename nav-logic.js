@@ -106,14 +106,26 @@ function displayUserNotifications(notifications) {
 }
 
 function formatNotifDate(dateStr) {
-  const date = new Date(dateStr);
+  if (!dateStr) return '';
+  // Convert "YYYY-MM-DD HH:MM:SS" to "YYYY-MM-DDTHH:MM:SSZ" if it lacks timezone specifier
+  let formattedDateStr = dateStr;
+  if (typeof dateStr === 'string' && !dateStr.includes('Z') && !dateStr.includes('+')) {
+    // Replace space between date and time with 'T' and append 'Z'
+    formattedDateStr = dateStr.replace(' ', 'T') + 'Z';
+  }
+  
+  const date = new Date(formattedDateStr);
   const now = new Date();
   const diffInMs = now - date;
+  
+  // Calculate relative times including seconds
+  const diffInSecs = Math.floor(diffInMs / 1000);
   const diffInMin = Math.floor(diffInMs / (1000 * 60));
   const diffInHrs = Math.floor(diffInMs / (1000 * 60 * 60));
   const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
   
-  if (diffInMin < 1) return 'Just now';
+  if (diffInSecs < 30) return 'Just now';
+  if (diffInSecs < 60) return `${diffInSecs}s ago`;
   if (diffInMin < 60) return `${diffInMin}m ago`;
   if (diffInHrs < 24) return `${diffInHrs}h ago`;
   if (diffInDays < 7) return `${diffInDays}d ago`;
