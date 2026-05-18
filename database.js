@@ -524,12 +524,33 @@ const dbHelpers = {
     });
   },
 
-  // Delete student
+  // Delete student (including all cascade associations)
   deleteStudent: (idNumber) => {
     return new Promise((resolve, reject) => {
-      db.run('DELETE FROM users WHERE id_number = ?', [idNumber], function(err) {
-        if (err) reject(err);
-        else resolve({ changes: this.changes });
+      // 1. Get user's ID
+      db.get('SELECT id FROM users WHERE id_number = ?', [idNumber], (err, user) => {
+        if (err) {
+          return reject(err);
+        }
+        if (!user) {
+          return resolve({ changes: 0 });
+        }
+        
+        const userId = user.id;
+        
+        // 2. Cascade delete dependent records to prevent Foreign Key constraint failures
+        db.serialize(() => {
+          db.run('DELETE FROM feedback WHERE user_id = ?', [userId]);
+          db.run('DELETE FROM notifications WHERE user_id = ?', [userId]);
+          db.run('DELETE FROM reservations WHERE user_id = ?', [userId]);
+          db.run('DELETE FROM sitin_records WHERE user_id = ?', [userId]);
+          
+          // 3. Delete the user
+          db.run('DELETE FROM users WHERE id = ?', [userId], function(err) {
+            if (err) reject(err);
+            else resolve({ changes: this.changes });
+          });
+        });
       });
     });
   },
