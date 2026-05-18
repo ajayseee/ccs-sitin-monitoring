@@ -538,7 +538,7 @@ const dbHelpers = {
   createSitInRecord: (userId, purpose, lab, pcNumber = null) => {
     return new Promise((resolve, reject) => {
       db.run(
-        'INSERT INTO sitin_records (user_id, language, purpose, pc_number, status, time_in, created_at) VALUES (?, ?, ?, ?, ?, datetime("now", "localtime"), datetime("now", "localtime"))',
+        "INSERT INTO sitin_records (user_id, language, purpose, pc_number, status, time_in, created_at) VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))",
         [userId, purpose, lab, pcNumber, 'active'],
         function(err) {
           if (err) reject(err);
@@ -672,7 +672,7 @@ const dbHelpers = {
             
             // Decrement user session
             db.run(
-              'UPDATE users SET sessions = sessions - 1, updated_at = datetime("now", "localtime") WHERE id = ?',
+              "UPDATE users SET sessions = sessions - 1, updated_at = datetime('now', 'localtime') WHERE id = ?",
               [row.user_id],
               function(err) {
                 if (err) reject(err);
