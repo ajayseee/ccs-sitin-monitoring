@@ -17,7 +17,7 @@ function formatStudentName(firstname, middlename, lastname, type = 'full') {
   return `${first} ${middle} ${last}`.trim();
 }
 
-let mainContent, studentInfoSection, viewSitInRecordsSection, currentSitInSection, reservationSection, feedbackReportsSection, sitinReportsSection, dropdownManagerSection;
+let mainContent, studentInfoSection, viewSitInRecordsSection, currentSitInSection, reservationSection, feedbackReportsSection, sitinReportsSection, dropdownManagerSection, pcManagementSection;
 let allSitinReports = []; // Store all reports for filtering and export
 let currentFilteredSitinReports = []; // Store currently filtered reports for export
 
@@ -91,6 +91,7 @@ function hideAllSections() {
     document.getElementById('feedbackReportsSection'),
     document.getElementById('sitinReportsSection'),
     document.getElementById('dropdownManagerSection'),
+    document.getElementById('pcManagementSection'),
     document.getElementById('adminLeaderboardSection')
   ];
   sections.forEach(section => {
@@ -109,6 +110,7 @@ function setupEventListeners() {
   sitinReportsSection = document.getElementById('sitinReportsSection');
   dropdownManagerSection = document.getElementById('dropdownManagerSection');
   adminLeaderboardSection = document.getElementById('adminLeaderboardSection');
+  pcManagementSection = document.getElementById('pcManagementSection');
   
   // Logout button
   const logoutBtn = document.getElementById('logoutBtn');
@@ -189,11 +191,13 @@ function setupEventListeners() {
     });
   }
 
-  // Sit-In Lab Change Listener for Software Availability
+  // Sit-In Lab Change Listener for Software Availability & PC Selection Grid
   const sitinLab = document.getElementById('sitinLab');
   if (sitinLab) {
     sitinLab.addEventListener('change', function() {
-      updateSoftwareAvailability(this.value);
+      const selectedLab = this.value;
+      updateSoftwareAvailability(selectedLab);
+      loadSitinPcGrid(selectedLab);
     });
   }
 
@@ -566,6 +570,33 @@ function setupEventListeners() {
       if (adminLeaderboardSection) adminLeaderboardSection.style.display = 'block';
       // Load leaderboard
       loadAdminLeaderboard();
+    });
+  }
+
+  // PC Management link
+  const pcManagementLink = document.getElementById('pcManagementLink');
+  if (pcManagementLink && pcManagementSection) {
+    pcManagementLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      hideAllSections();
+      if (pcManagementSection) pcManagementSection.style.display = 'block';
+      loadPcManagementLabs();
+    });
+  }
+
+  const pcManageLabSelect = document.getElementById('pcManageLabSelect');
+  if (pcManageLabSelect) {
+    pcManageLabSelect.addEventListener('change', function() {
+      const selectedLab = this.value;
+      if (selectedLab) {
+        renderPcManagementGrid(selectedLab);
+      } else {
+        document.getElementById('pcManageGrid').innerHTML = `
+          <div class="no-pcs-message" style="grid-column: 1 / -1; text-align: center; color: #888; padding: 40px 0; font-style: italic;">
+            Please select a laboratory to manage PCs.
+          </div>
+        `;
+      }
     });
   }
 
@@ -1368,6 +1399,12 @@ function clearSitInForm() {
   document.getElementById('sitinPcNumber').value = '';
   document.getElementById('sitinSoftwareContainer').style.display = 'none';
   document.getElementById('sitinRemainingSessions').value = '';
+  
+  // Clear PC grid
+  const pcGroup = document.getElementById('sitinPcSelectionGroup');
+  if (pcGroup) pcGroup.style.display = 'none';
+  const grid = document.getElementById('sitinPcGrid');
+  if (grid) grid.innerHTML = '';
 }
 
 // Update Software Availability display in Sit-In Form
@@ -2718,17 +2755,100 @@ function filterAdminLeaderboard(searchTerm) {
   );
   displayAdminFullLeaderboard(filtered);
 }
-function openApproveModal(reservationId) {
+async function openApproveModal(reservationId) {
   const modal = document.getElementById('approveReservationModal');
   const details = document.getElementById('approveReservationDetails');
   const reservation = allReservations.find(r => r.id == reservationId);
   
   if (reservation) {
     details.innerHTML = `Student: <strong>${formatStudentName(reservation.firstname, reservation.middlename, reservation.lastname, 'full')}</strong><br>Lab: <strong>Lab ${reservation.lab}</strong><br>Date: <strong>${new Date(reservation.reservation_date).toLocaleDateString()}</strong>`;
+    
+    // Clear selected PC number
+    document.getElementById('approvePcNumber').value = '';
+    
+    // Load PC selection grid
+    const grid = document.getElementById('approvePcGrid');
+    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 20px;">Loading PCs...</div>';
+    
+    try {
+      const token = localStorage.getItem('authToken');
+      const dateObj = new Date(reservation.reservation_date);
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const d = String(dateObj.getDate()).padStart(2, '0');
+      const formattedDate = `${y}-${m}-${d}`;
+      
+      const response = await fetch(`/api/pcs?lab=${reservation.lab}&date=${formattedDate}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      
+      if (data.success && data.pcs) {
+        grid.innerHTML = '';
+        data.pcs.forEach(pc => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `pc-select-btn pc-status-${pc.status}`;
+          btn.style.padding = '8px';
+          btn.style.borderRadius = '6px';
+          btn.style.border = '1px solid';
+          btn.style.fontSize = '12px';
+          btn.style.fontWeight = '600';
+          btn.style.cursor = pc.status === 'available' ? 'pointer' : 'not-allowed';
+          
+          if (pc.status === 'available') {
+            btn.style.background = '#ecfdf5';
+            btn.style.borderColor = '#10b981';
+            btn.style.color = '#065f46';
+          } else if (pc.status === 'occupied') {
+            btn.style.background = '#fee2e2';
+            btn.style.borderColor = '#ef4444';
+            btn.style.color = '#991b1b';
+            btn.disabled = true;
+          } else {
+            // disabled
+            btn.style.background = '#f1f5f9';
+            btn.style.borderColor = '#cbd5e1';
+            btn.style.color = '#64748b';
+            btn.style.opacity = '0.6';
+            btn.disabled = true;
+          }
+          
+          btn.innerHTML = `<i class="fa-solid fa-desktop" style="display:block; font-size:14px; margin-bottom:4px;"></i> ${pc.pc_number}`;
+          
+          if (pc.status === 'available') {
+            btn.addEventListener('click', function() {
+              // Deselect others
+              grid.querySelectorAll('.pc-select-btn').forEach(b => {
+                if (b.classList.contains('pc-status-available')) {
+                  b.style.background = '#ecfdf5';
+                  b.style.borderColor = '#10b981';
+                  b.style.color = '#065f46';
+                  b.style.boxShadow = 'none';
+                }
+              });
+              
+              // Select this one
+              btn.style.background = '#3b82f6';
+              btn.style.borderColor = '#2563eb';
+              btn.style.color = '#ffffff';
+              btn.style.boxShadow = '0 0 8px rgba(59, 130, 246, 0.5)';
+              
+              document.getElementById('approvePcNumber').value = pc.pc_number;
+            });
+          }
+          grid.appendChild(btn);
+        });
+      } else {
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 20px;">Failed to load PCs</div>';
+      }
+    } catch (err) {
+      console.error(err);
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 20px;">Error loading PCs</div>';
+    }
   }
   
   document.getElementById('approveReservationId').value = reservationId;
-  document.getElementById('approvePcNumber').value = '';
   modal.classList.add('show');
 }
 
@@ -2736,4 +2856,215 @@ function closeApproveModal() {
   document.getElementById('approveReservationModal').classList.remove('show');
 }
 
+async function loadPcManagementLabs() {
+  try {
+    const res = await fetch('/api/dropdowns/lab');
+    const data = await res.json();
+    const select = document.getElementById('pcManageLabSelect');
+    if (!select) return;
+    
+    if (data.success && data.options) {
+      select.innerHTML = '<option value="">Select Lab</option>' + data.options.map(opt => `<option value="${opt.value}">Lab ${opt.value}</option>`).join('');
+    }
+  } catch (error) {
+    console.error('Error loading labs for PC management:', error);
+  }
+}
+
+async function renderPcManagementGrid(lab) {
+  const grid = document.getElementById('pcManageGrid');
+  if (!grid) return;
+  
+  grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px 0;">Loading PCs...</div>';
+  
+  try {
+    const token = localStorage.getItem('authToken');
+    const today = new Date().toISOString().split('T')[0];
+    
+    const response = await fetch(`/api/pcs?lab=${lab}&date=${today}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await response.json();
+    
+    if (data.success && data.pcs) {
+      grid.innerHTML = '';
+      data.pcs.forEach(pc => {
+        const pcCard = document.createElement('div');
+        pcCard.className = `pc-manage-card pc-status-${pc.status}`;
+        pcCard.style.padding = '15px';
+        pcCard.style.borderRadius = '8px';
+        pcCard.style.border = '1px solid';
+        pcCard.style.textAlign = 'center';
+        pcCard.style.display = 'flex';
+        pcCard.style.flexDirection = 'column';
+        pcCard.style.alignItems = 'center';
+        pcCard.style.gap = '10px';
+        pcCard.style.transition = 'all 0.2s ease';
+        
+        const isCurrentlyDisabled = pc.status === 'disabled';
+        
+        if (isCurrentlyDisabled) {
+          pcCard.style.background = '#fee2e2';
+          pcCard.style.borderColor = '#fecaca';
+          pcCard.style.color = '#991b1b';
+        } else {
+          pcCard.style.background = '#f8fafc';
+          pcCard.style.borderColor = '#cbd5e1';
+          pcCard.style.color = '#334155';
+        }
+        
+        const iconHtml = `<i class="fa-solid fa-desktop" style="font-size: 24px;"></i>`;
+        
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.style.padding = '6px 12px';
+        btn.style.borderRadius = '4px';
+        btn.style.border = 'none';
+        btn.style.fontSize = '12px';
+        btn.style.fontWeight = 'bold';
+        btn.style.cursor = 'pointer';
+        btn.style.width = '100%';
+        btn.style.transition = 'background 0.2s';
+        
+        if (isCurrentlyDisabled) {
+          btn.textContent = 'Enable PC';
+          btn.style.background = '#10b981';
+          btn.style.color = '#fff';
+        } else {
+          btn.textContent = 'Disable PC';
+          btn.style.background = '#ef4444';
+          btn.style.color = '#fff';
+        }
+        
+        btn.addEventListener('click', async function() {
+          try {
+            const newStatus = isCurrentlyDisabled ? 'enabled' : 'disabled';
+            const toggleRes = await fetch('/api/admin/pcs/status', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ lab, pcNumber: pc.pc_number, status: newStatus })
+            });
+            const toggleData = await toggleRes.json();
+            if (toggleData.success) {
+              renderPcManagementGrid(lab);
+            } else {
+              alert('Failed to update PC status: ' + toggleData.message);
+            }
+          } catch (e) {
+            console.error('Error toggling PC status:', e);
+            alert('Error updating PC status.');
+          }
+        });
+        
+        pcCard.innerHTML = `
+          ${iconHtml}
+          <div style="font-weight: bold; font-size: 14px;">${pc.pc_number}</div>
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 600; opacity: 0.8;">
+            ${isCurrentlyDisabled ? 'Disabled' : 'Enabled'}
+          </div>
+        `;
+        pcCard.appendChild(btn);
+        grid.appendChild(pcCard);
+      });
+    } else {
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 40px 0;">Failed to load PCs list</div>';
+    }
+  } catch (error) {
+    console.error('Error rendering PC grid:', error);
+    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 40px 0;">Error loading PC grid</div>';
+  }
+}
+
 window.closeApproveModal = closeApproveModal;
+
+async function loadSitinPcGrid(lab) {
+  const pcGroup = document.getElementById('sitinPcSelectionGroup');
+  const grid = document.getElementById('sitinPcGrid');
+  const selectedInput = document.getElementById('sitinPcNumber');
+  
+  if (!lab) {
+    if (pcGroup) pcGroup.style.display = 'none';
+    if (selectedInput) selectedInput.value = '';
+    return;
+  }
+  
+  if (pcGroup) pcGroup.style.display = 'block';
+  if (selectedInput) selectedInput.value = '';
+  if (grid) grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 20px; font-size: 13px;">Loading PCs...</div>';
+  
+  try {
+    const token = localStorage.getItem('authToken');
+    const today = new Date().toISOString().split('T')[0];
+    
+    const response = await fetch(`/api/pcs?lab=${lab}&date=${today}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await response.json();
+    
+    if (data.success && data.pcs) {
+      grid.innerHTML = '';
+      data.pcs.forEach(pc => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `pc-select-btn pc-status-${pc.status}`;
+        btn.style.padding = '6px';
+        btn.style.borderRadius = '5px';
+        btn.style.border = '1px solid';
+        btn.style.fontSize = '11px';
+        btn.style.fontWeight = '600';
+        btn.style.cursor = pc.status === 'available' ? 'pointer' : 'not-allowed';
+        
+        if (pc.status === 'available') {
+          btn.style.background = '#ecfdf5';
+          btn.style.borderColor = '#10b981';
+          btn.style.color = '#065f46';
+        } else if (pc.status === 'occupied') {
+          btn.style.background = '#fee2e2';
+          btn.style.borderColor = '#ef4444';
+          btn.style.color = '#991b1b';
+          btn.disabled = true;
+        } else {
+          // disabled
+          btn.style.background = '#f1f5f9';
+          btn.style.borderColor = '#cbd5e1';
+          btn.style.color = '#64748b';
+          btn.style.opacity = '0.6';
+          btn.disabled = true;
+        }
+        
+        btn.innerHTML = `<i class="fa-solid fa-desktop" style="display:block; font-size:12px; margin-bottom:2px;"></i> ${pc.pc_number}`;
+        
+        if (pc.status === 'available') {
+          btn.addEventListener('click', function() {
+            // Deselect others
+            grid.querySelectorAll('.pc-select-btn').forEach(b => {
+              if (b.classList.contains('pc-status-available')) {
+                b.style.background = '#ecfdf5';
+                b.style.borderColor = '#10b981';
+                b.style.color = '#065f46';
+                b.style.boxShadow = 'none';
+              }
+            });
+            
+            // Select this one
+            btn.style.background = '#3b82f6';
+            btn.style.borderColor = '#2563eb';
+            btn.style.color = '#ffffff';
+            btn.style.boxShadow = '0 0 6px rgba(59, 130, 246, 0.5)';
+            
+            selectedInput.value = pc.pc_number;
+          });
+        }
+        grid.appendChild(btn);
+      });
+    } else {
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 20px; font-size: 13px;">Failed to load PCs</div>';
+    }
+  } catch (err) {
+    console.error(err);
+    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 20px; font-size: 13px;">Error loading PCs</div>';
+  }
+}

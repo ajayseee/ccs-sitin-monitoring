@@ -314,6 +314,23 @@ function initializeDatabase() {
     }
   });
 
+  // PC statuses table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS pcs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      lab TEXT NOT NULL,
+      pc_number TEXT NOT NULL,
+      status TEXT DEFAULT 'enabled', -- 'enabled' or 'disabled'
+      UNIQUE(lab, pc_number)
+    )
+  `, (err) => {
+    if (err) {
+      console.error('Error creating pcs table:', err.message);
+    } else {
+      console.log('PCs status table ready');
+    }
+  });
+
 }
 
 // Database helper functions
@@ -844,11 +861,11 @@ const dbHelpers = {
   },
 
   // Create a reservation
-  createReservation: (userId, lab, seatNumber, purpose, reservationDate) => {
+  createReservation: (userId, lab, seatNumber, purpose, reservationDate, pcNumber = null) => {
     return new Promise((resolve, reject) => {
       db.run(
-        'INSERT INTO reservations (user_id, lab, seat_number, purpose, reservation_date, status) VALUES (?, ?, ?, ?, ?, ?)',
-        [userId, lab, seatNumber, purpose, reservationDate, 'pending'],
+        'INSERT INTO reservations (user_id, lab, seat_number, purpose, reservation_date, status, pc_number) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [userId, lab, seatNumber, purpose, reservationDate, 'pending', pcNumber],
         function(err) {
           if (err) reject(err);
           else resolve({ id: this.lastID });
@@ -1177,6 +1194,78 @@ const dbHelpers = {
         if (err) reject(err);
         else resolve({ changes: this.changes });
       });
+    });
+  },
+
+  updatePcStatus: (lab, pcNumber, status) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        'INSERT INTO pcs (lab, pc_number, status) VALUES (?, ?, ?) ON CONFLICT(lab, pc_number) DO UPDATE SET status = excluded.status',
+        [lab, pcNumber, status],
+        function(err) {
+          if (err) reject(err);
+          else resolve({ changes: this.changes });
+        }
+      );
+    });
+  },
+
+  getPcsStatus: (lab, date) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const disabledPcs = await new Promise((res, rej) => {
+          db.all("SELECT pc_number FROM pcs WHERE lab = ? AND status = 'disabled'", [lab], (err, rows) => {
+            if (err) rej(err);
+            else res(rows ? rows.map(r => r.pc_number) : []);
+          });
+        });
+
+        const reservedPcs = await new Promise((res, rej) => {
+          db.all("SELECT pc_number FROM reservations WHERE lab = ? AND (reservation_date = ? OR reservation_date LIKE ?) AND status = 'approved' AND pc_number IS NOT NULL", [lab, date, `${date}%`], (err, rows) => {
+            if (err) rej(err);
+            else res(rows ? rows.map(r => r.pc_number) : []);
+          });
+        });
+
+        let activeSitInPcs = [];
+        const options = { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' };
+        const formatter = new Intl.DateTimeFormat('en-US', options);
+        const parts = formatter.formatToParts(new Date());
+        const y = parts.find(p => p.type === 'year').value;
+        const m = parts.find(p => p.type === 'month').value;
+        const d = parts.find(p => p.type === 'day').value;
+        const todayStr = `${y}-${m}-${d}`;
+        
+        const utcDate = new Date();
+        const utcy = utcDate.getUTCFullYear();
+        const utcm = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+        const utcd = String(utcDate.getUTCDate()).padStart(2, '0');
+        const utcTodayStr = `${utcy}-${utcm}-${utcd}`;
+
+        if (date === todayStr || date === utcTodayStr) {
+          activeSitInPcs = await new Promise((res, rej) => {
+            db.all("SELECT pc_number FROM sitin_records WHERE purpose = ? AND status = 'active' AND pc_number IS NOT NULL", [lab], (err, rows) => {
+              if (err) rej(err);
+              else res(rows ? rows.map(r => r.pc_number) : []);
+            });
+          });
+        }
+
+        const pcsList = [];
+        for (let i = 1; i <= 50; i++) {
+          const pcNum = `PC-${String(i).padStart(2, '0')}`;
+          let status = 'available';
+          if (disabledPcs.includes(pcNum)) {
+            status = 'disabled';
+          } else if (reservedPcs.includes(pcNum) || activeSitInPcs.includes(pcNum)) {
+            status = 'occupied';
+          }
+          pcsList.push({ pc_number: pcNum, status });
+        }
+        resolve(pcsList);
+      } catch (err) {
+        reject(err);
+      }
     });
   }
 };

@@ -138,6 +138,7 @@ async function submitReservation() {
   const lab = document.getElementById('reservationLab').value;
   const reservationDate = document.getElementById('reservationDate').value;
   const purpose = document.getElementById('reservationPurpose').value;
+  const pcNumber = document.getElementById('selectedPcNumber').value;
   
   if (!lab || !reservationDate) {
     alert('Please select a lab and date');
@@ -154,9 +155,10 @@ async function submitReservation() {
       },
       body: JSON.stringify({
         lab: lab,
-        seatNumber: '',
+        seatNumber: pcNumber || '',
         purpose: purpose,
-        reservationDate: reservationDate
+        reservationDate: reservationDate,
+        pcNumber: pcNumber || null
       })
     });
     
@@ -167,6 +169,8 @@ async function submitReservation() {
       // Reset form
       document.getElementById('reservationForm').reset();
       document.getElementById('reservationSoftware').textContent = 'Select a lab to see available software';
+      document.getElementById('pcSelectionGroup').style.display = 'none';
+      document.getElementById('selectedPcNumber').value = '';
       // Reload reservations
       loadReservations();
     } else {
@@ -276,6 +280,7 @@ if (resLabSelect) {
     
     if (!selectedLabValue) {
       softwareDisplay.innerHTML = 'Select a lab to see available software';
+      checkPcAvailability();
       return;
     }
     
@@ -294,6 +299,102 @@ if (resLabSelect) {
     } else {
       softwareDisplay.innerHTML = '<span style="color: #666; font-style: italic;">No specific software listed for this lab</span>';
     }
+    
+    checkPcAvailability();
+  });
+}
+
+const resDateSelect = document.getElementById('reservationDate');
+if (resDateSelect) {
+  resDateSelect.addEventListener('change', checkPcAvailability);
+}
+
+function checkPcAvailability() {
+  const lab = document.getElementById('reservationLab').value;
+  const date = document.getElementById('reservationDate').value;
+  const pcGroup = document.getElementById('pcSelectionGroup');
+  const grid = document.getElementById('reservationPcGrid');
+  const selectedInput = document.getElementById('selectedPcNumber');
+  
+  if (!lab || !date) {
+    if (pcGroup) pcGroup.style.display = 'none';
+    if (selectedInput) selectedInput.value = '';
+    return;
+  }
+  
+  if (pcGroup) pcGroup.style.display = 'block';
+  if (selectedInput) selectedInput.value = '';
+  if (grid) grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 20px;">Loading PCs...</div>';
+  
+  const token = localStorage.getItem('authToken');
+  fetch(`/api/pcs?lab=${lab}&date=${date}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success && data.pcs) {
+      grid.innerHTML = '';
+      data.pcs.forEach(pc => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `pc-select-btn pc-status-${pc.status}`;
+        btn.style.padding = '8px';
+        btn.style.borderRadius = '6px';
+        btn.style.border = '1px solid';
+        btn.style.fontSize = '12px';
+        btn.style.fontWeight = '600';
+        btn.style.cursor = pc.status === 'available' ? 'pointer' : 'not-allowed';
+        
+        if (pc.status === 'available') {
+          btn.style.background = '#ecfdf5';
+          btn.style.borderColor = '#10b981';
+          btn.style.color = '#065f46';
+        } else if (pc.status === 'occupied') {
+          btn.style.background = '#fee2e2';
+          btn.style.borderColor = '#ef4444';
+          btn.style.color = '#991b1b';
+          btn.disabled = true;
+        } else {
+          // disabled
+          btn.style.background = '#f1f5f9';
+          btn.style.borderColor = '#cbd5e1';
+          btn.style.color = '#64748b';
+          btn.style.opacity = '0.6';
+          btn.disabled = true;
+        }
+        
+        btn.innerHTML = `<i class="fa-solid fa-desktop" style="display:block; font-size:14px; margin-bottom:4px;"></i> ${pc.pc_number}`;
+        
+        if (pc.status === 'available') {
+          btn.addEventListener('click', function() {
+            // Deselect others
+            grid.querySelectorAll('.pc-select-btn').forEach(b => {
+              if (b.classList.contains('pc-status-available')) {
+                b.style.background = '#ecfdf5';
+                b.style.borderColor = '#10b981';
+                b.style.color = '#065f46';
+                b.style.boxShadow = 'none';
+              }
+            });
+            
+            // Select this one
+            btn.style.background = '#3b82f6';
+            btn.style.borderColor = '#2563eb';
+            btn.style.color = '#ffffff';
+            btn.style.boxShadow = '0 0 8px rgba(59, 130, 246, 0.5)';
+            
+            selectedInput.value = pc.pc_number;
+          });
+        }
+        grid.appendChild(btn);
+      });
+    } else {
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 20px;">Failed to load PCs</div>';
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 20px;">Error loading PCs</div>';
   });
 }
 

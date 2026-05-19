@@ -545,7 +545,7 @@ app.get('/api/reservations', authenticateToken, async (req, res) => {
 app.post('/api/reservations', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { lab, seatNumber, purpose, reservationDate } = req.body;
+    const { lab, seatNumber, purpose, reservationDate, pcNumber } = req.body;
     
     if (!lab || !reservationDate) {
       return res.status(400).json({ 
@@ -554,7 +554,7 @@ app.post('/api/reservations', authenticateToken, async (req, res) => {
       });
     }
     
-    const result = await dbHelpers.createReservation(userId, lab, seatNumber, purpose, reservationDate);
+    const result = await dbHelpers.createReservation(userId, lab, seatNumber, purpose, reservationDate, pcNumber || null);
     
     // Create notification for admin
     const user = await dbHelpers.getUserByIdNumber(req.user.idNumber);
@@ -1241,6 +1241,39 @@ app.get('/api/leaderboard', async (req, res) => {
       success: false, 
       message: 'Server error fetching leaderboard' 
     });
+  }
+});
+
+// Get PC status list for a lab and date
+app.get('/api/pcs', authenticateToken, async (req, res) => {
+  try {
+    const { lab, date } = req.query;
+    if (!lab || !date) {
+      return res.status(400).json({ success: false, message: 'Lab and date are required' });
+    }
+    const pcs = await dbHelpers.getPcsStatus(lab, date);
+    res.json({ success: true, pcs });
+  } catch (error) {
+    console.error('Error fetching PC status:', error);
+    res.status(500).json({ success: false, message: 'Server error fetching PC status: ' + error.message });
+  }
+});
+
+// Admin: Toggle PC status (enable/disable)
+app.put('/api/admin/pcs/status', authenticateAdmin, async (req, res) => {
+  try {
+    const { lab, pcNumber, status } = req.body;
+    if (!lab || !pcNumber || !status) {
+      return res.status(400).json({ success: false, message: 'Lab, PC Number, and Status are required' });
+    }
+    if (!['enabled', 'disabled'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+    await dbHelpers.updatePcStatus(lab, pcNumber, status);
+    res.json({ success: true, message: `PC status updated to ${status} successfully` });
+  } catch (error) {
+    console.error('Error updating PC status:', error);
+    res.status(500).json({ success: false, message: 'Server error updating PC status' });
   }
 });
 

@@ -807,3 +807,36 @@ html {
     }
 }
 
+/* PC Selection Grid Styles (User Dashboard) */
+.pc-selection-grid {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.pc-selection-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pc-selection-grid::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.pc-selection-grid::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.pc-selection-grid::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.pc-select-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.pc-select-btn:not(:disabled):hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+}
+
